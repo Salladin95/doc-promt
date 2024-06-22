@@ -1,9 +1,43 @@
-package main
+package cmd
 
-import (
-	"github.com/Salladin95/doc-prompt/cmd"
-	"testing"
-)
+import "testing"
+
+func TestIsOrdinanceSpecificKey(t *testing.T) {
+	tests := []struct {
+		input    UserInputKey
+		expected bool
+	}{
+		{Decision, true},
+		{NumberOfOrdinance, true},
+		{DateOfEnactment, true},
+		{FullName, false},
+	}
+
+	for _, test := range tests {
+		output := IsOrdinanceSpecificKey(test.input)
+		if output != test.expected {
+			t.Errorf("IsOrdinanceSpecificKey(%q) = %v; want %v", test.input, output, test.expected)
+		}
+	}
+}
+
+func TestIsProtocolSpecificKey(t *testing.T) {
+	tests := []struct {
+		input    UserInputKey
+		expected bool
+	}{
+		{NumberOfProtocol, true},
+		{DateOfProtocol, true},
+		{FullName, false},
+	}
+
+	for _, test := range tests {
+		output := IsProtocolSpecificKey(test.input)
+		if output != test.expected {
+			t.Errorf("IsProtocolSpecificKey(%q) = %v; want %v", test.input, output, test.expected)
+		}
+	}
+}
 
 func TestRetrieveFirstLetter(t *testing.T) {
 	tests := []struct {
@@ -16,7 +50,7 @@ func TestRetrieveFirstLetter(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		output := cmd.RetrieveFirstLetter(test.input)
+		output := RetrieveFirstLetter(test.input)
 		if output != test.expected {
 			t.Errorf("RetrieveFirstLetter(%q) = %q; want %q", test.input, output, test.expected)
 		}
@@ -34,38 +68,9 @@ func TestRetrieveFirstWord(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		output := cmd.RetrieveFirstWord(test.input)
+		output := RetrieveFirstWord(test.input)
 		if output != test.expected {
 			t.Errorf("RetrieveFirstWord(%q) = %q; want %q", test.input, output, test.expected)
-		}
-	}
-}
-
-func TestFullNameToShortName(t *testing.T) {
-	tests := []struct {
-		input       string
-		expected    string
-		shouldError bool
-	}{
-		{"Magomadov Magomed Magomadovich", "Magomadov M. M.", false},
-		{"John Doe Smith", "John D. S.", false},
-		{"SingleWord", "", true},
-		{"John Doe", "", true},
-	}
-
-	for _, test := range tests {
-		output, err := fullNameToShortName(test.input)
-		if test.shouldError {
-			if err == nil {
-				t.Errorf("fullNameToShortName(%q) expected error but got none", test.input)
-			}
-		} else {
-			if err != nil {
-				t.Errorf("fullNameToShortName(%q) unexpected error: %v", test.input, err)
-			}
-			if output != test.expected {
-				t.Errorf("fullNameToShortName(%q) = %q; want %q", test.input, output, test.expected)
-			}
 		}
 	}
 }
@@ -81,7 +86,7 @@ func TestFormatTimeOrDefault(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		output := cmd.FormatTimeOrDefault(test.timeInput, test.defaultTime)
+		output := FormatTimeOrDefault(test.timeInput, test.defaultTime)
 		if output != test.expected {
 			t.Errorf("FormatTimeOrDefault(%q, %q) = %q; want %q", test.timeInput, test.defaultTime, output, test.expected)
 		}
