@@ -104,8 +104,8 @@ func TestProcessDefaults(t *testing.T) {
 		t.Errorf("Expected ActualAddress to be '123 Main St', got %q", userInputs[ActualAddress])
 	}
 
-	if userInputs[Occupation] != defaultOccupation {
-		t.Errorf("Expected Occupation to be '%s', got %q", defaultOccupation, userInputs[Occupation])
+	if userInputs[Occupation] != DefaultOccupation {
+		t.Errorf("Expected Occupation to be '%s', got %q", DefaultOccupation, userInputs[Occupation])
 	}
 
 	if userInputs[DateOfOrdinance] != expectedDateOfOrdinance {

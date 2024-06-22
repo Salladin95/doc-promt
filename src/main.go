@@ -12,14 +12,14 @@ import (
 	"time"
 )
 
-const (
-	dateFormat = "02.01.2006г."
+const dateFormat = "02.01.2006г."
 
-	// Default values
-	defaultOccupation    = "Гражданин"
-	defaultTimeOrdinance = "17 часов 30 минут"
-	defaultTimeAccident  = "11 часов 30 минут"
-	defaultDecision      = "Предупреждения"
+// Default values
+const (
+	DefaultOccupation    = "Гражданин"
+	DefaultTimeOrdinance = "17 часов 30 минут"
+	DefaultTimeAccident  = "11 часов 30 минут"
+	DefaultDecision      = "Предупреждения"
 )
 
 type UserInputKey string
@@ -44,7 +44,7 @@ const (
 	DateOfEnactment   UserInputKey = "dateOfEnactment"
 )
 
-var placeholders = [][]interface{}{
+var Placeholders = [][]interface{}{
 	{NumberOfProtocol, "Введите № протокола: "},
 	{DateOfProtocol, fmt.Sprintf("Введите дату регистрации протокола, в следующем формате - %s: ", dateFormat)},
 	{FullName, "Введите полное имя - Магомадов Магомед Магомедович: "},
@@ -82,7 +82,7 @@ func gatherUserInputs(reader *bufio.Reader) map[UserInputKey]string {
 	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 	fmt.Println()
 
-	for _, pair := range placeholders {
+	for _, pair := range Placeholders {
 		key := pair[0].(UserInputKey)
 		prompt := pair[1].(string)
 		fmt.Println(prompt)
@@ -110,19 +110,19 @@ func processDefaults(userInputs map[UserInputKey]string) {
 	}
 
 	if userInputs[Occupation] == "" {
-		userInputs[Occupation] = defaultOccupation
+		userInputs[Occupation] = DefaultOccupation
 	}
 
 	if userInputs[DateOfOrdinance] == "" {
 		userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(dateFormat)
 	}
 
-	userInputs[TimeOfOrdinance] = formatTimeOrDefault(userInputs[TimeOfOrdinance], defaultTimeOrdinance)
+	userInputs[TimeOfOrdinance] = formatTimeOrDefault(userInputs[TimeOfOrdinance], DefaultTimeOrdinance)
 	userInputs[DateOfAccident] = dateOfProtocol.Format(dateFormat)
-	userInputs[TimeOfAccident] = formatTimeOrDefault(userInputs[TimeOfAccident], defaultTimeAccident)
+	userInputs[TimeOfAccident] = formatTimeOrDefault(userInputs[TimeOfAccident], DefaultTimeAccident)
 
 	if userInputs[Decision] == "" {
-		userInputs[Decision] = defaultDecision
+		userInputs[Decision] = DefaultDecision
 	}
 
 	dateOfOrdinance, err := time.Parse(dateFormat, userInputs[DateOfOrdinance])
@@ -191,7 +191,7 @@ func createFilledDocument(templatePath string, replaceMap docx.PlaceholderMap, o
 
 	err = doc.ReplaceAll(replaceMap)
 	if err != nil {
-		return fmt.Errorf("replacing placeholders: %v", err)
+		return fmt.Errorf("replacing Placeholders: %v", err)
 	}
 
 	err = doc.WriteToFile(outputPath)
@@ -215,6 +215,19 @@ func createFolderPath(cwd string, userInputs map[UserInputKey]string) string {
 	}
 
 	return folderPath
+}
+
+func fullNameToShortName(fullName string) (string, error) {
+	fullNameParts := strings.Split(fullName, " ")
+	if len(fullNameParts) < 3 {
+		return "", errors.New("full name too short")
+	}
+	return fmt.Sprintf(
+		"%s %s. %s.",
+		fullNameParts[0],
+		RetrieveFirstLetter(fullNameParts[1]),
+		RetrieveFirstLetter(fullNameParts[2]),
+	), nil
 }
 
 func IsOrdinanceSpecificKey(key UserInputKey) bool {
@@ -248,17 +261,4 @@ func RetrieveFirstWord(input string) string {
 		return fullNameParts[0]
 	}
 	return ""
-}
-
-func fullNameToShortName(fullName string) (string, error) {
-	fullNameParts := strings.Split(fullName, " ")
-	if len(fullNameParts) < 3 {
-		return "", errors.New("full name too short")
-	}
-	return fmt.Sprintf(
-		"%s %s. %s.",
-		fullNameParts[0],
-		RetrieveFirstLetter(fullNameParts[1]),
-		RetrieveFirstLetter(fullNameParts[2]),
-	), nil
 }
