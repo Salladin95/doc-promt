@@ -15,6 +15,7 @@ const (
 	DateOfProtocol    UserInputKey = "dateOfProtocol"
 	DateOfAccident    UserInputKey = "dateOfAccident"
 	TimeOfAccident    UserInputKey = "timeOfAccident"
+	AddressOfAccident UserInputKey = "addressOfAccident"
 	NumberOfOrdinance UserInputKey = "numberOfOrdinance"
 	DateOfOrdinance   UserInputKey = "dateOfOrdinance"
 	TimeOfOrdinance   UserInputKey = "timeOfOrdinance"

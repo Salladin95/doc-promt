@@ -16,8 +16,6 @@ func IsOrdinanceSpecificKey(key UserInputKey) bool {
 
 func IsProtocolSpecificKey(key UserInputKey) bool {
 	switch key {
-	case NumberOfProtocol, DateOfProtocol:
-		return true
 	default:
 		return false
 	}

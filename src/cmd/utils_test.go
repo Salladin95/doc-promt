@@ -26,8 +26,8 @@ func TestIsProtocolSpecificKey(t *testing.T) {
 		input    UserInputKey
 		expected bool
 	}{
-		{NumberOfProtocol, true},
-		{DateOfProtocol, true},
+		{NumberOfProtocol, false},
+		{DateOfProtocol, false},
 		{FullName, false},
 	}
 
