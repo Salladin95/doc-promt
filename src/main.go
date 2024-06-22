@@ -17,8 +17,7 @@ func main() {
 	userInputs := gatherUserInputs(reader)
 	cmd.ProcessDefaults(userInputs)
 
-	err := generateDocuments(userInputs)
-	if err != nil {
+	if err := generateDocuments(userInputs); err != nil {
 		log.Fatalf("Error generating documents: %v", err)
 	}
 	fmt.Println("Documents created successfully")
@@ -36,9 +35,8 @@ func gatherUserInputs(reader *bufio.Reader) map[cmd.UserInputKey]string {
 		key := pair[0].(cmd.UserInputKey)
 		prompt := pair[1].(string)
 		fmt.Println(prompt)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		userInputs[key] = input
+		userInput, _ := reader.ReadString('\n')
+		userInputs[key] = strings.TrimSpace(userInput)
 	}
 
 	shortName, err := fullNameToShortName(userInputs[cmd.FullName])
@@ -56,15 +54,13 @@ func generateDocuments(userInputs map[cmd.UserInputKey]string) error {
 	}
 
 	protocolReplaceMap, ordinanceReplaceMap := createReplacementMaps(userInputs)
-	folderPath := createFolderPath(cwd, userInputs)
+	folderPath := createFolderPath(cwd, generateFolderPathSuffix(userInputs))
 
-	err = createFilledDocument(filepath.Join(cwd, "templates", "protocol_template.docx"), protocolReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Проткол № %s.docx", userInputs[cmd.NumberOfProtocol])))
-	if err != nil {
+	if err := createFilledDocument(filepath.Join(cwd, "templates", "protocol_template.docx"), protocolReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Проткол № %s.docx", userInputs[cmd.NumberOfProtocol]))); err != nil {
 		return err
 	}
 
-	err = createFilledDocument(filepath.Join(cwd, "templates", "ordinance_template.docx"), ordinanceReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Постановление № %s.docx", userInputs[cmd.NumberOfOrdinance])))
-	if err != nil {
+	if err := createFilledDocument(filepath.Join(cwd, "templates", "ordinance_template.docx"), ordinanceReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Постановление № %s.docx", userInputs[cmd.NumberOfOrdinance]))); err != nil {
 		return err
 	}
 
@@ -110,11 +106,11 @@ func createFilledDocument(templatePath string, replaceMap docx.PlaceholderMap, o
 	return nil
 }
 
-func createFolderPath(cwd string, userInputs map[cmd.UserInputKey]string) string {
+func createFolderPath(cwd, suffix string) string {
 	folderPath := filepath.Join(
 		cwd,
 		"materials",
-		fmt.Sprintf("%s %s", cmd.RetrieveFirstWord(userInputs[cmd.FullName]), userInputs[cmd.DateOfAccident]),
+		suffix,
 	)
 
 	err := os.MkdirAll(folderPath, 0755)
@@ -123,6 +119,14 @@ func createFolderPath(cwd string, userInputs map[cmd.UserInputKey]string) string
 	}
 
 	return folderPath
+}
+
+func generateFolderPathSuffix(userInputs cmd.UserInputsMap) string {
+	return fmt.Sprintf(
+		"%s %s",
+		cmd.RetrieveFirstWord(userInputs[cmd.FullName]),
+		userInputs[cmd.DateOfAccident],
+	)
 }
 
 func fullNameToShortName(fullName string) (string, error) {

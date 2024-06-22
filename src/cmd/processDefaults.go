@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func ProcessDefaults(userInputs map[UserInputKey]string) {
+func ProcessDefaults(userInputs UserInputsMap) {
 	dateOfProtocol, err := time.Parse(DateFormat, userInputs[DateOfProtocol])
 	if err != nil {
 		log.Panicln(err)

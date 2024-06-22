@@ -22,3 +22,5 @@ const (
 	Decision          UserInputKey = "decision"
 	DateOfEnactment   UserInputKey = "dateOfEnactment"
 )
+
+type UserInputsMap map[UserInputKey]string
