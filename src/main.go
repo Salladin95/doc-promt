@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"github.com/lukasjarosch/go-docx"
 	"log"
@@ -11,158 +12,16 @@ import (
 	"time"
 )
 
-func main() {
-	reader := bufio.NewReader(os.Stdin)
-	userInputs := make(map[UserInputKey]string)
+const (
+	dateFormat = "02.01.2006г."
 
-	// Get the current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error getting current working directory:", err)
-		return
-	}
+	// Default values
+	defaultOccupation    = "Гражданин"
+	defaultTimeOrdinance = "17 часов 30 минут"
+	defaultTimeAccident  = "11 часов 30 минут"
+	defaultDecision      = "Предупреждения"
+)
 
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println("!!!!!!!!! Если у поля есть значение по умолчанию, оно будет использовано в случае пропуска заполнения данного поля !!!!!!!!!")
-	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-	fmt.Println()
-
-	for _, pair := range placeholders {
-		key := pair[0].(UserInputKey)
-		prompt := pair[1].(string)
-		fmt.Println(prompt)
-		input, _ := reader.ReadString('\n')
-		input = strings.TrimSpace(input)
-		userInputs[key] = input
-	}
-
-	userInputs[ShortName] = fullNameToShortName(userInputs[FullName])
-
-	dateOfProtocol, err := time.Parse(dateFormat, userInputs[DateOfProtocol])
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	for _, pair := range placeholders {
-		key := pair[0].(UserInputKey)
-		switch key {
-		case ActualAddress:
-			if userInputs[ActualAddress] == "" {
-				userInputs[ActualAddress] = userInputs[OfficialAddress]
-			}
-
-		case Occupation:
-			if userInputs[Occupation] == "" {
-				userInputs[Occupation] = "Гражданин"
-			}
-
-		case DateOfOrdinance:
-			if userInputs[DateOfOrdinance] == "" {
-				userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(dateFormat)
-			}
-
-		case TimeOfOrdinance:
-			if userInputs[TimeOfOrdinance] == "" {
-				userInputs[TimeOfOrdinance] = "17 часов 30 минут"
-			} else {
-				timeParts := strings.Split(userInputs[TimeOfOrdinance], " ")
-				userInputs[TimeOfOrdinance] = fmt.Sprintf("%s часов %s минут", timeParts[0], timeParts[1])
-			}
-
-		case DateOfAccident:
-			userInputs[DateOfAccident] = dateOfProtocol.Format(dateFormat)
-
-		case TimeOfAccident:
-			if userInputs[TimeOfAccident] == "" {
-				userInputs[TimeOfAccident] = "11 часов 30 минут"
-			} else {
-				timeParts := strings.Split(userInputs[TimeOfAccident], " ")
-				userInputs[TimeOfAccident] = fmt.Sprintf("%s часов %s минут", timeParts[0], timeParts[1])
-			}
-
-		case Decision:
-			if userInputs[Decision] == "" {
-				userInputs[Decision] = "Предупреждения"
-			}
-		}
-	}
-
-	dateOfOrdinance, err := time.Parse(dateFormat, userInputs[DateOfOrdinance])
-	if err != nil {
-		log.Panicln(err)
-	}
-
-	userInputs[DateOfEnactment] = dateOfOrdinance.AddDate(0, 0, 10).Format(dateFormat)
-
-	protocolReplaceMap := make(docx.PlaceholderMap)
-	ordinanceReplaceMap := make(docx.PlaceholderMap)
-
-	for key, value := range userInputs {
-		formattedKey := fmt.Sprintf("{%s}", key)
-		switch true {
-		case IsProtocolSpecificKey(key):
-			protocolReplaceMap[formattedKey] = value
-		case IsOrdinanceSpecificKey(key):
-			ordinanceReplaceMap[formattedKey] = value
-		default:
-			protocolReplaceMap[formattedKey] = value
-			ordinanceReplaceMap[formattedKey] = value
-		}
-	}
-
-	// Construct the absolute path to the template
-	protocolTemplatePath := filepath.Join(cwd, "templates", "protocol_template.docx")
-	ordinanceTemplatePath := filepath.Join(cwd, "templates", "ordinance_template.docx")
-
-	// Load the template document
-	protocol, err := docx.Open(protocolTemplatePath)
-	if err != nil {
-		fmt.Println("Error opening  protocol:", err)
-		return
-	}
-
-	// Load the template document
-	ordinance, err := docx.Open(ordinanceTemplatePath)
-	if err != nil {
-		fmt.Println("Error opening ordinance:", err)
-		return
-	}
-
-	if err := protocol.ReplaceAll(protocolReplaceMap); err != nil {
-		panic(err)
-	}
-
-	if err := ordinance.ReplaceAll(ordinanceReplaceMap); err != nil {
-		panic(err)
-	}
-
-	folderPath := filepath.Join(
-		cwd,
-		"filled_documents",
-		fmt.Sprintf("%s %s", RetrieveFirstWord(userInputs[FullName]), userInputs[DateOfAccident]),
-	)
-
-	// Create directory with read and write permissions for the user
-	if err := os.MkdirAll(folderPath, 0755); err != nil {
-		log.Fatalf("Error creating directory: %v", err)
-	}
-
-	filledProtocolPath := filepath.Join(folderPath, "filled_protocol.docx")
-	if err := protocol.WriteToFile(filledProtocolPath); err != nil {
-		fmt.Println("Error saving protocol:", err)
-		return
-	}
-
-	filledOrdinancePath := filepath.Join(folderPath, "filled_ordinance.docx")
-	if err := ordinance.WriteToFile(filledOrdinancePath); err != nil {
-		fmt.Println("Error saving ordinance:", err)
-		return
-	}
-
-	fmt.Println("Documents created successfully:", filledProtocolPath, filledOrdinancePath)
-}
-
-// UserInputKey represents the valid keys for the placeholders map
 type UserInputKey string
 
 const (
@@ -185,7 +44,6 @@ const (
 	DateOfEnactment   UserInputKey = "dateOfEnactment"
 )
 
-// Example usage
 var placeholders = [][]interface{}{
 	{NumberOfProtocol, "Введите № протокола: "},
 	{DateOfProtocol, fmt.Sprintf("Введите дату регистрации протокола, в следующем формате - %s: ", dateFormat)},
@@ -199,9 +57,164 @@ var placeholders = [][]interface{}{
 	{TimeOfAccident, "Введите время происшествия, в следующем формате - 10 40 (по умолчанию - 11 30): "},
 	{Occupation, "Введите должность - \"Директор\" || \"Гражданин\" (по умолчанию Гражданин): "},
 	{NumberOfOrdinance, "Введите № постановления: "},
-	{DateOfOrdinance, fmt.Sprintf("Введите дату рассмотрения протокола (Дата регистрации постановления), в следующем формате - %s  (по умолчанию следующий день от даты регистрции проткола): ", dateFormat)},
-	{TimeOfOrdinance, "Введите время рассмотрения протокла, в следующем формате - 10 40  (по умолчанию - 17 30): "},
+	{DateOfOrdinance, fmt.Sprintf("Введите дату рассмотрения протокола (Дата регистрации постановления), в следующем формате - %s  (по умолчанию следующий день от даты регистрации протокола): ", dateFormat)},
+	{TimeOfOrdinance, "Введите время рассмотрения протокола, в следующем формате - 10 40  (по умолчанию - 17 30): "},
 	{Decision, "Введите решение постановления в родительноме падеже, например - \"штрафа в размере 5000 (ПЯТЬ ТЫСЯЧ РУБЛЕЙ)\" || \"Предупреждения\"  (по умолчанию - Предупреждения): "},
+}
+
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	userInputs := gatherUserInputs(reader)
+	processDefaults(userInputs)
+
+	err := generateDocuments(userInputs)
+	if err != nil {
+		log.Fatalf("Error generating documents: %v", err)
+	}
+	fmt.Println("Documents created successfully")
+}
+
+func gatherUserInputs(reader *bufio.Reader) map[UserInputKey]string {
+	userInputs := make(map[UserInputKey]string)
+
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println("!!!!!!!!! Если у поля есть значение по умолчанию, оно будет использовано в случае пропуска заполнения данного поля !!!!!!!!!")
+	fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	fmt.Println()
+
+	for _, pair := range placeholders {
+		key := pair[0].(UserInputKey)
+		prompt := pair[1].(string)
+		fmt.Println(prompt)
+		input, _ := reader.ReadString('\n')
+		input = strings.TrimSpace(input)
+		userInputs[key] = input
+	}
+
+	shortName, err := fullNameToShortName(userInputs[FullName])
+	if err != nil {
+		log.Panicln(err)
+	}
+	userInputs[ShortName] = shortName
+	return userInputs
+}
+
+func processDefaults(userInputs map[UserInputKey]string) {
+	dateOfProtocol, err := time.Parse(dateFormat, userInputs[DateOfProtocol])
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	if userInputs[ActualAddress] == "" {
+		userInputs[ActualAddress] = userInputs[OfficialAddress]
+	}
+
+	if userInputs[Occupation] == "" {
+		userInputs[Occupation] = defaultOccupation
+	}
+
+	if userInputs[DateOfOrdinance] == "" {
+		userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(dateFormat)
+	}
+
+	userInputs[TimeOfOrdinance] = formatTimeOrDefault(userInputs[TimeOfOrdinance], defaultTimeOrdinance)
+	userInputs[DateOfAccident] = dateOfProtocol.Format(dateFormat)
+	userInputs[TimeOfAccident] = formatTimeOrDefault(userInputs[TimeOfAccident], defaultTimeAccident)
+
+	if userInputs[Decision] == "" {
+		userInputs[Decision] = defaultDecision
+	}
+
+	dateOfOrdinance, err := time.Parse(dateFormat, userInputs[DateOfOrdinance])
+	if err != nil {
+		log.Panicln(err)
+	}
+
+	userInputs[DateOfEnactment] = dateOfOrdinance.AddDate(0, 0, 10).Format(dateFormat)
+}
+
+func formatTimeOrDefault(timeInput, defaultTime string) string {
+	if timeInput == "" {
+		return defaultTime
+	}
+	timeParts := strings.Split(timeInput, " ")
+	return fmt.Sprintf("%s часов %s минут", timeParts[0], timeParts[1])
+}
+
+func generateDocuments(userInputs map[UserInputKey]string) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting current working directory: %v", err)
+	}
+
+	protocolReplaceMap, ordinanceReplaceMap := createReplacementMaps(userInputs)
+	folderPath := createFolderPath(cwd, userInputs)
+
+	err = createFilledDocument(filepath.Join(cwd, "templates", "protocol_template.docx"), protocolReplaceMap, filepath.Join(folderPath, "filled_protocol.docx"))
+	if err != nil {
+		return err
+	}
+
+	err = createFilledDocument(filepath.Join(cwd, "templates", "ordinance_template.docx"), ordinanceReplaceMap, filepath.Join(folderPath, "filled_ordinance.docx"))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createReplacementMaps(userInputs map[UserInputKey]string) (docx.PlaceholderMap, docx.PlaceholderMap) {
+	protocolReplaceMap := make(docx.PlaceholderMap)
+	ordinanceReplaceMap := make(docx.PlaceholderMap)
+
+	for key, value := range userInputs {
+		formattedKey := fmt.Sprintf("{%s}", key)
+		switch {
+		case IsProtocolSpecificKey(key):
+			protocolReplaceMap[formattedKey] = value
+		case IsOrdinanceSpecificKey(key):
+			ordinanceReplaceMap[formattedKey] = value
+		default:
+			protocolReplaceMap[formattedKey] = value
+			ordinanceReplaceMap[formattedKey] = value
+		}
+	}
+
+	return protocolReplaceMap, ordinanceReplaceMap
+}
+
+func createFilledDocument(templatePath string, replaceMap docx.PlaceholderMap, outputPath string) error {
+	doc, err := docx.Open(templatePath)
+	if err != nil {
+		return fmt.Errorf("opening template %s: %v", templatePath, err)
+	}
+
+	err = doc.ReplaceAll(replaceMap)
+	if err != nil {
+		return fmt.Errorf("replacing placeholders: %v", err)
+	}
+
+	err = doc.WriteToFile(outputPath)
+	if err != nil {
+		return fmt.Errorf("saving document: %v", err)
+	}
+
+	return nil
+}
+
+func createFolderPath(cwd string, userInputs map[UserInputKey]string) string {
+	folderPath := filepath.Join(
+		cwd,
+		"filled_documents",
+		fmt.Sprintf("%s %s", RetrieveFirstWord(userInputs[FullName]), userInputs[DateOfAccident]),
+	)
+
+	err := os.MkdirAll(folderPath, 0755)
+	if err != nil {
+		log.Fatalf("Error creating directory: %v", err)
+	}
+
+	return folderPath
 }
 
 func IsOrdinanceSpecificKey(key UserInputKey) bool {
@@ -237,14 +250,15 @@ func RetrieveFirstWord(input string) string {
 	return ""
 }
 
-func fullNameToShortName(fullName string) string {
+func fullNameToShortName(fullName string) (string, error) {
 	fullNameParts := strings.Split(fullName, " ")
+	if len(fullNameParts) < 3 {
+		return "", errors.New("full name too short")
+	}
 	return fmt.Sprintf(
 		"%s %s. %s.",
 		fullNameParts[0],
 		RetrieveFirstLetter(fullNameParts[1]),
 		RetrieveFirstLetter(fullNameParts[2]),
-	)
+	), nil
 }
-
-var dateFormat = "02.01.2006г."
