@@ -58,12 +58,12 @@ func generateDocuments(userInputs map[cmd.UserInputKey]string) error {
 	protocolReplaceMap, ordinanceReplaceMap := createReplacementMaps(userInputs)
 	folderPath := createFolderPath(cwd, userInputs)
 
-	err = createFilledDocument(filepath.Join(cwd, "templates", "protocol_template.docx"), protocolReplaceMap, filepath.Join(folderPath, "filled_protocol.docx"))
+	err = createFilledDocument(filepath.Join(cwd, "templates", "protocol_template.docx"), protocolReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Проткол № %s.docx", userInputs[cmd.NumberOfProtocol])))
 	if err != nil {
 		return err
 	}
 
-	err = createFilledDocument(filepath.Join(cwd, "templates", "ordinance_template.docx"), ordinanceReplaceMap, filepath.Join(folderPath, "filled_ordinance.docx"))
+	err = createFilledDocument(filepath.Join(cwd, "templates", "ordinance_template.docx"), ordinanceReplaceMap, filepath.Join(folderPath, fmt.Sprintf("Постановление № %s.docx", userInputs[cmd.NumberOfOrdinance])))
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func createFilledDocument(templatePath string, replaceMap docx.PlaceholderMap, o
 func createFolderPath(cwd string, userInputs map[cmd.UserInputKey]string) string {
 	folderPath := filepath.Join(
 		cwd,
-		"filled_documents",
+		"materials",
 		fmt.Sprintf("%s %s", cmd.RetrieveFirstWord(userInputs[cmd.FullName]), userInputs[cmd.DateOfAccident]),
 	)
 
