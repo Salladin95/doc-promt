@@ -12,8 +12,14 @@ import (
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-
 	userInputs := make(map[UserInputKey]string)
+
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current working directory:", err)
+		return
+	}
 
 	for _, pair := range placeholders {
 		key := pair[0].(UserInputKey)
@@ -43,16 +49,9 @@ func main() {
 		}
 	}
 
-	// Get the current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error getting current working directory:", err)
-		return
-	}
-
 	// Construct the absolute path to the template
-	protocolTemplatePath := filepath.Join(cwd, "..", "templates", "protocol_template.docx")
-	ordinanceTemplatePath := filepath.Join(cwd, "..", "templates", "ordinance_template.docx")
+	protocolTemplatePath := filepath.Join(cwd, "templates", "protocol_template.docx")
+	ordinanceTemplatePath := filepath.Join(cwd, "templates", "ordinance_template.docx")
 
 	// Load the template document
 	protocol, err := docx.Open(protocolTemplatePath)
@@ -78,7 +77,6 @@ func main() {
 
 	folderPath := filepath.Join(
 		cwd,
-		"..",
 		"filled_documents",
 		fmt.Sprintf("%s %s", RetrieveFirstWord(userInputs[FullName]), userInputs[DateOfAccident]),
 	)
@@ -89,15 +87,15 @@ func main() {
 	}
 
 	filledProtocolPath := filepath.Join(folderPath, "filled_protocol.docx")
-	err = protocol.WriteToFile(filledProtocolPath)
-	if err != nil {
+	fmt.Println(filledProtocolPath)
+	if err := protocol.WriteToFile(filledProtocolPath); err != nil {
 		fmt.Println("Error saving protocol:", err)
 		return
 	}
 
 	filledOrdinancePath := filepath.Join(folderPath, "filled_ordinance.docx")
-	err = protocol.WriteToFile(filledOrdinancePath)
-	if err != nil {
+	fmt.Println(filledProtocolPath)
+	if err := protocol.WriteToFile(filledOrdinancePath); err != nil {
 		fmt.Println("Error saving ordinance:", err)
 		return
 	}
