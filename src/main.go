@@ -40,47 +40,51 @@ func main() {
 
 	dateOfProtocol, err := time.Parse(dateFormat, userInputs[DateOfProtocol])
 	if err != nil {
-		fmt.Println("!!!!!!!!!!!!!!!!!!!!!!")
 		log.Panicln(err)
 	}
 
-	if userInputs[ActualAddress] == "" {
-		userInputs[ActualAddress] = userInputs[OfficialAddress]
-	}
+	for _, pair := range placeholders {
+		key := pair[0].(UserInputKey)
+		switch key {
+		case ActualAddress:
+			if userInputs[ActualAddress] == "" {
+				userInputs[ActualAddress] = userInputs[OfficialAddress]
+			}
 
-	if userInputs[DateOfAccident] == "" {
-		userInputs[DateOfAccident] = userInputs[DateOfProtocol]
-	}
+		case Occupation:
+			if userInputs[Occupation] == "" {
+				userInputs[Occupation] = "Гражданин"
+			}
 
-	if userInputs[TimeOfAccident] == "" {
-		userInputs[TimeOfAccident] = "11 30"
-	}
+		case DateOfOrdinance:
+			if userInputs[DateOfOrdinance] == "" {
+				userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(dateFormat)
+			}
 
-	if userInputs[Occupation] == "" {
-		userInputs[Occupation] = "Гражданин"
-	}
+		case TimeOfOrdinance:
+			if userInputs[TimeOfOrdinance] == "" {
+				userInputs[TimeOfOrdinance] = "17 часов 30 минут"
+			} else {
+				timeParts := strings.Split(userInputs[TimeOfOrdinance], " ")
+				userInputs[TimeOfOrdinance] = fmt.Sprintf("%s часов %s минут", timeParts[0], timeParts[1])
+			}
 
-	if userInputs[DateOfOrdinance] == "" {
-		if err != nil {
-			log.Panicln(err)
+		case DateOfAccident:
+			userInputs[DateOfAccident] = dateOfProtocol.Format(dateFormat)
+
+		case TimeOfAccident:
+			if userInputs[TimeOfAccident] == "" {
+				userInputs[TimeOfAccident] = "11 часов 30 минут"
+			} else {
+				timeParts := strings.Split(userInputs[TimeOfAccident], " ")
+				userInputs[TimeOfAccident] = fmt.Sprintf("%s часов %s минут", timeParts[0], timeParts[1])
+			}
+
+		case Decision:
+			if userInputs[Decision] == "" {
+				userInputs[Decision] = "Предупреждения"
+			}
 		}
-		userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(dateFormat)
-	}
-
-	if userInputs[TimeOfOrdinance] == "" {
-		userInputs[TimeOfOrdinance] = "17 30"
-	}
-
-	if userInputs[DateOfAccident] == "" {
-		userInputs[DateOfAccident] = dateOfProtocol.Format(dateFormat)
-	}
-
-	if userInputs[TimeOfAccident] == "" {
-		userInputs[TimeOfAccident] = "11 30"
-	}
-
-	if userInputs[Decision] == "" {
-		userInputs[Decision] = "Предупреждения"
 	}
 
 	dateOfOrdinance, err := time.Parse(dateFormat, userInputs[DateOfOrdinance])
