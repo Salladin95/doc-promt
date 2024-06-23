@@ -19,13 +19,13 @@ func ProcessDefaults(userInputs UserInputsMap) {
 		userInputs[Occupation] = DefaultOccupation
 	}
 
-	if userInputs[DateOfOrdinance] == "" {
-		userInputs[DateOfOrdinance] = dateOfProtocol.AddDate(0, 0, 1).Format(DateFormat)
-	}
-
 	userInputs[TimeOfOrdinance] = FormatTimeOrDefault(userInputs[TimeOfOrdinance], DefaultTimeOrdinance)
 	userInputs[DateOfAccident] = dateOfProtocol.Format(DateFormat)
 	userInputs[TimeOfAccident] = FormatTimeOrDefault(userInputs[TimeOfAccident], DefaultTimeAccident)
+
+	if userInputs[AddressOfAccident] == "" {
+		userInputs[AddressOfAccident] = userInputs[ActualAddress]
+	}
 
 	if userInputs[Decision] == "" {
 		userInputs[Decision] = DefaultDecision
